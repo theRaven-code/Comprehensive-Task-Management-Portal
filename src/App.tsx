@@ -1,8 +1,12 @@
 // src/App.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import Board from './components/Board';
 import { useAppState } from './context/AppStateContext';
+import Layout from './layout/Layout';
+import Navbar from './layout/Navbar';
+import Snackbar from './components/Snackbar';
+import Popup from './common/Popup';
 
 const AppContainer = styled.div`
   font-family: 'Arial', sans-serif;
@@ -10,24 +14,37 @@ const AppContainer = styled.div`
   margin: 20px;
 `;
 
-const defaultColumns = [
-  { id: 1, title: 'To Do', tasks: [{ id: 1, title: 'Task 1' }] },
-  { id: 2, title: 'In Progress', tasks: [] },
-  { id: 3, title: 'Done', tasks: [] },
-];
-
 const App: React.FC = () => {
-  // Use useAppState to access state and dispatch if needed
   const { state, dispatch } = useAppState();
+  const [showStatus, setShowStatus] = useState<boolean>(false);
+  const [isPopupVisible, setPopupVisible] = useState<boolean>(false);
 
-  // Define the columns prop with a fallback to the defaultColumns array
-  const columnsData = state.columns || defaultColumns;
+  const columnsData = state.columns || [];
+
+  useEffect(() => {
+    setShowStatus(!showStatus);
+  }, [columnsData]);
+
+  const openPopup = () => {
+    setPopupVisible(true);
+  };
+
+  const closePopup = () => {
+    setPopupVisible(false);
+  };
 
   return (
-      <AppContainer className='bg-background '>
-        <h1>Task Management</h1>
-        <Board columns={columnsData} />
-      </AppContainer>
+    <div className='max-h-screen min-w-full flex flex-col p-0 m-0 box-border'>
+      <Navbar />
+      <Layout>
+        <AppContainer className=' flex flex-col w-[100%]'>
+          <h1 className='text-2xl text-cyan-50'>Task Management</h1>
+          <Board columns={columnsData} openPopup={openPopup} />
+        </AppContainer>
+      </Layout>
+      {isPopupVisible && <Popup status={true} onClose={closePopup} />}
+      {showStatus && <Snackbar />}
+    </div>
   );
 };
 

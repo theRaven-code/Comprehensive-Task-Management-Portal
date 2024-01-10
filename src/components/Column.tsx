@@ -7,9 +7,10 @@ import { useDrop } from 'react-dnd';
 
 interface ColumnProps {
   title: string;
-  tasks: { id: number; title: string }[];
+  tasks: { id: number; title: string, completed: boolean }[];
   id: number;
   onDrop: (taskId: number, columnId: number) => void;
+  openPopup: () => void; // New prop for opening the popup
 }
 
 const ColumnContainer = styled.div`
@@ -26,36 +27,22 @@ const ColumnTitle = styled.h2`
 `;
 
 const AddCardButton = styled.button`
-  background-color: #3498db;
-  color: #ffffff;
+  background-color: #f4f4f4;
+  color: #666666;
   padding: 8px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: font-weight 0.3s ease;
+
+  &:hover {
+    font-weight: bold;
+  }
 `;
 
-const ModalOverlay = styled.div`
-  display: ${(props) => (props.show ? 'flex' : 'none')};
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  justify-content: center;
-  align-items: center;
-`;
-
-const ModalContent = styled.div`
-  background-color: #fff;
-  padding: 16px;
-  border-radius: 4px;
-  width: 300px;
-`;
-
-const Column: React.FC<ColumnProps> = ({ title, tasks, id, onDrop }) => {
+const Column: React.FC<ColumnProps> = ({ title, tasks, id, onDrop, openPopup }) => {
   const { state, dispatch } = useAppState();
-  const [showModal, setShowModal] = useState(false);
+  const [isAddingCard, setIsAddingCard] = useState(false);
   const [cardTitle, setCardTitle] = useState('');
 
   const [, drop] = useDrop({
@@ -67,19 +54,13 @@ const Column: React.FC<ColumnProps> = ({ title, tasks, id, onDrop }) => {
   });
 
   const handleAddCardClick = () => {
-    setShowModal(true);
-  };
-
-  const handleModalClose = () => {
-    setShowModal(false);
-    setCardTitle(''); // Reset the cardTitle when closing the modal
+    setIsAddingCard(true);
   };
 
   const handleAddCardSubmit = () => {
     if (cardTitle.trim() !== '') {
-      // Assuming you have a function in your app state context to add a card to the columns
       dispatch({ type: 'ADD_CARD', columnId: id, cardTitle });
-      setShowModal(false);
+      setIsAddingCard(false);
       setCardTitle('');
     }
   };
@@ -88,23 +69,25 @@ const Column: React.FC<ColumnProps> = ({ title, tasks, id, onDrop }) => {
     <ColumnContainer ref={drop}>
       <ColumnTitle>{title}</ColumnTitle>
       {tasks.map((task) => (
-        <Task key={task.id} task={task} />
+        <Task key={task.id} task={task} columnId={id} openPopup={openPopup} isEditing={false} onCancel={function (): void {
+          throw new Error('Function not implemented.');
+        } } onSave={function (): void {
+          throw new Error('Function not implemented.');
+        } } />
       ))}
-      <AddCardButton onClick={handleAddCardClick}>Add a Card</AddCardButton>
-
-      <ModalOverlay show={showModal}>
-        <ModalContent>
-          <label htmlFor="cardTitle">Card Title:</label>
-          <input
-            type="text"
-            id="cardTitle"
-            value={cardTitle}
-            onChange={(e) => setCardTitle(e.target.value)}
-          />
-          <button onClick={handleModalClose}>Cancel</button>
-          <button onClick={handleAddCardSubmit}>Add Card</button>
-        </ModalContent>
-      </ModalOverlay>
+      {isAddingCard && (
+        <Task
+          task={{ id: 0, title: cardTitle, completed: false }}
+          columnId={id}
+          isEditing={true}
+          onCancel={() => setIsAddingCard(false)}
+          onSave={handleAddCardSubmit}
+          openPopup={openPopup}
+        />
+      )}
+      <AddCardButton onClick={handleAddCardClick} disabled={isAddingCard} color={isAddingCard ? 'red' : 'inherit'}>
+        Add a Card
+      </AddCardButton>
     </ColumnContainer>
   );
 };
